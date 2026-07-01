@@ -22,9 +22,6 @@ public class PostController {
     @GetMapping({ "/", "/posts", "/posts/" })
     public String list(Model model) {
         model.addAttribute("posts", postService.latest());
-        if (!model.containsAttribute("postForm")) {
-            model.addAttribute("postForm", new PostForm());
-        }
         return "posts/list";
     }
 
@@ -38,12 +35,11 @@ public class PostController {
     public String create(@Valid @ModelAttribute("postForm") PostForm postForm,
             BindingResult bindingResult, Model model) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute("posts", postService.latest());
-            return "posts/list";
+            return "posts/form";
         }
 
         postService.create(postForm.getAuthor(), postForm.getContent());
-        return "redirect:/posts/";
+        return "redirect:/posts";
     }
 
     // 演習中に追加するエンドポイント:

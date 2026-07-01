@@ -49,7 +49,7 @@ class PostCreationFlowTest {
                         .param("author", "alice")
                         .param("content", "今日の共有です"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/posts/"));
+                .andExpect(redirectedUrl("/posts"));
 
         assertThat(postRepository.count()).isEqualTo(beforeCount + 1);
         Post savedPost = postRepository.findTop50ByOrderByCreatedAtDesc().get(0);
@@ -65,7 +65,7 @@ class PostCreationFlowTest {
                         .param("author", "")
                         .param("content", "本文だけあります"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("posts/list"))
+                .andExpect(view().name("posts/form"))
                 .andExpect(model().hasErrors())
                 .andExpect(model().attributeHasFieldErrors("postForm", "author"))
                 .andExpect(content().string(containsString("投稿者名を入力してください")));
@@ -80,7 +80,7 @@ class PostCreationFlowTest {
                         .param("author", "alice")
                         .param("content", ""))
                 .andExpect(status().isOk())
-                .andExpect(view().name("posts/list"))
+                .andExpect(view().name("posts/form"))
                 .andExpect(model().hasErrors())
                 .andExpect(model().attributeHasFieldErrors("postForm", "content"))
                 .andExpect(content().string(containsString("本文を入力してください")));
@@ -97,9 +97,9 @@ class PostCreationFlowTest {
                         .param("author", "alice")
                         .param("content", "今登録した内容"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/posts/"));
+                .andExpect(redirectedUrl("/posts"));
 
-        MvcResult result = mockMvc.perform(get("/posts/"))
+        MvcResult result = mockMvc.perform(get("/posts"))
                 .andExpect(status().isOk())
                 .andReturn();
 

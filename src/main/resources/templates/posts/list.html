@@ -11,25 +11,8 @@
     <h1>社内つぶやきボード</h1>
     <nav>
         <a th:href="@{/posts}">一覧</a>
+        <a th:href="@{/posts/new}">新規投稿</a>
     </nav>
-    <section class="post-form">
-        <form th:action="@{/posts/create}" th:object="${postForm}" method="post">
-            <div>
-                <label for="author">投稿者</label>
-                <input type="text" id="author" th:field="*{author}" maxlength="30" required>
-                <p class="error" th:if="${#fields.hasErrors('author')}" th:errors="*{author}">エラー</p>
-            </div>
-            <div>
-                <label for="content">内容 (280 文字まで)</label>
-                <textarea id="content" th:field="*{content}" maxlength="280" rows="4" required></textarea>
-                <p class="error" th:if="${#fields.hasErrors('content')}" th:errors="*{content}">エラー</p>
-            </div>
-            <button type="submit">投稿</button>
-        </form>
-    </section>
-    <form class="refresh-form" th:action="@{/posts/}" method="get">
-        <button type="submit">更新</button>
-    </form>
 
     <section>
         <p th:if="${#lists.isEmpty(posts)}">まだ投稿はありません</p>

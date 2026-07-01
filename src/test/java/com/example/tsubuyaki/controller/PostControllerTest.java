@@ -44,19 +44,15 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("投稿一覧_更新ボタン_押すとpostsスラッシュへGETリクエストする")
-    void list_refreshButton_requestsPostsWithTrailingSlash() throws Exception {
+    @DisplayName("投稿一覧_新規投稿リンク_フォーム画面へ遷移でき一覧に投稿フォームを表示しない")
+    void list_newPostLink_navigatesToFormWithoutRenderingCreateForm() throws Exception {
         given(postService.latest()).willReturn(Collections.emptyList());
 
         mockMvc.perform(get("/posts"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("action=\"/posts/\"")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("method=\"get\"")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("更新")));
-
-        mockMvc.perform(get("/posts/"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("posts/list"));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"/posts/new\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("action=\"/posts/create\""))));
     }
 
     @Test
