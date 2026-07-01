@@ -8,7 +8,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -25,7 +25,7 @@ class PostRepositoryTest {
     @Test
     @DisplayName("投稿一覧_51件以上の投稿_新着50件だけを返す")
     void findLatest_whenMoreThanFifty_returnsOnlyLatestFifty() {
-        Instant base = Instant.parse("2026-05-23T00:00:00Z");
+        LocalDateTime base = LocalDateTime.of(2026, 5, 23, 0, 0);
         IntStream.rangeClosed(1, 51)
                 .mapToObj(index -> new Post("user" + index, "body" + index, base.plusSeconds(index)))
                 .forEach(postRepository::save);

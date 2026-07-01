@@ -12,7 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -91,7 +91,7 @@ class PostCreationFlowTest {
     @Test
     @DisplayName("投稿登録_登録後に一覧表示_登録した投稿が新着順の先頭に表示される")
     void create_thenList_showsCreatedPostAtTop() throws Exception {
-        postRepository.save(new Post("bob", "古い投稿", Instant.parse("2026-05-23T00:00:00Z")));
+        postRepository.save(new Post("bob", "古い投稿", LocalDateTime.of(2026, 5, 23, 0, 0)));
 
         mockMvc.perform(post("/posts/create")
                         .param("author", "alice")
