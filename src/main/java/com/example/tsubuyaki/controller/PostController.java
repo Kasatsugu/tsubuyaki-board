@@ -1,8 +1,12 @@
 package com.example.tsubuyaki.controller;
 
 import com.example.tsubuyaki.domain.Post;
+import com.example.tsubuyaki.service.ClientHashGenerator;
+import com.example.tsubuyaki.service.ClientIpResolver;
+import com.example.tsubuyaki.service.LikeService;
 import com.example.tsubuyaki.service.PostService;
 import com.example.tsubuyaki.web.dto.PostForm;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Optional;
@@ -19,15 +24,36 @@ import java.util.Optional;
 public class PostController {
 
     private final PostService postService;
+    private final LikeService likeService;
+    private final ClientHashGenerator clientHashGenerator;
+    private final ClientIpResolver clientIpResolver;
 
-    public PostController(PostService postService) {
+    public PostController(PostService postService, LikeService likeService, ClientHashGenerator clientHashGenerator,
+            ClientIpResolver clientIpResolver) {
         this.postService = postService;
+        this.likeService = likeService;
+        this.clientHashGenerator = clientHashGenerator;
+        this.clientIpResolver = clientIpResolver;
     }
 
     @GetMapping({ "/", "/posts", "/posts/" })
-    public String list(Model model) {
-        model.addAttribute("posts", postService.latest());
+    public String list(@RequestParam(name = "q", required = false) String query, Model model) {
+        if (!model.containsAttribute("postForm")) {
+            model.addAttribute("postForm", new PostForm());
+        }
+        addListAttributes(query, model);
         return "posts/list";
+    }
+
+    private void addListAttributes(String query, Model model) {
+        boolean searchActive = hasSearchQuery(query);
+        model.addAttribute("posts", searchActive ? postService.search(query) : postService.latest());
+        model.addAttribute("searchQuery", query == null ? "" : query);
+        model.addAttribute("searchActive", searchActive);
+    }
+
+    private boolean hasSearchQuery(String query) {
+        return query != null && !query.isBlank();
     }
 
     @GetMapping("/posts/new")
@@ -40,22 +66,33 @@ public class PostController {
     public String create(@Valid @ModelAttribute("postForm") PostForm postForm,
             BindingResult bindingResult, Model model) {
         if (bindingResult.hasErrors()) {
-            return "posts/form";
+            addListAttributes(null, model);
+            return "posts/list";
         }
 
-        postService.create(postForm.getAuthor(), postForm.getContent());
+        postService.create(postForm.getAuthor(), postForm.getContent(), postForm.getAvatarColor());
         return "redirect:/posts";
     }
 
     @GetMapping("/posts/{id}")
-    public String detail(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+    public String detail(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes,
+            HttpServletRequest request) {
         Optional<Post> post = postService.findById(id);
         if (post.isEmpty()) {
             redirectAttributes.addFlashAttribute("errorMessage", "指定された投稿は見つかりませんでした");
             return "redirect:/posts";
         }
 
+        String clientHash = clientHashGenerator.generate(clientIpResolver.resolve(request), request.getHeader("User-Agent"));
         model.addAttribute("post", post.get());
+        model.addAttribute("likeSummary", likeService.summary(id, clientHash));
         return "posts/detail";
+    }
+
+    @PostMapping("/posts/{id}/likes")
+    public String toggleLike(@PathVariable Long id, HttpServletRequest request) {
+        String clientHash = clientHashGenerator.generate(clientIpResolver.resolve(request), request.getHeader("User-Agent"));
+        likeService.toggle(id, clientHash);
+        return "redirect:/posts/" + id;
     }
 }

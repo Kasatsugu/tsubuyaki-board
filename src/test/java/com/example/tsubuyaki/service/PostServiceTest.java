@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +38,34 @@ class PostServiceTest {
 
         assertThat(actual).isEqualTo(latestPosts);
         verify(postRepository).findTop50ByOrderByCreatedAtDesc();
+    }
+
+    @Test
+    @DisplayName("投稿検索_キーワードあり_Repositoryの本文検索結果を返す")
+    void search_whenKeywordExists_returnsMatchedPostsFromRepository() {
+        List<Post> matchedPosts = List.of(
+                new Post("alice", "朝会メモ", LocalDateTime.of(2026, 5, 23, 10, 0)));
+        given(postRepository.findTop50ByBodyContainingOrderByCreatedAtDesc("朝会")).willReturn(matchedPosts);
+
+        List<Post> actual = postService.search("朝会");
+
+        assertThat(actual).isEqualTo(matchedPosts);
+        verify(postRepository).findTop50ByBodyContainingOrderByCreatedAtDesc("朝会");
+        verify(postRepository, never()).findTop50ByOrderByCreatedAtDesc();
+    }
+
+    @Test
+    @DisplayName("投稿検索_キーワード空白_Repositoryの新着50件取得結果を返す")
+    void search_whenKeywordBlank_returnsLatestPostsFromRepository() {
+        List<Post> latestPosts = List.of(
+                new Post("alice", "新しい投稿", LocalDateTime.of(2026, 5, 23, 10, 0)));
+        given(postRepository.findTop50ByOrderByCreatedAtDesc()).willReturn(latestPosts);
+
+        List<Post> actual = postService.search("  ");
+
+        assertThat(actual).isEqualTo(latestPosts);
+        verify(postRepository).findTop50ByOrderByCreatedAtDesc();
+        verify(postRepository, never()).findTop50ByBodyContainingOrderByCreatedAtDesc(org.mockito.ArgumentMatchers.any());
     }
 
     @Test

@@ -14,7 +14,8 @@
     </nav>
 
     <article class="post">
-        <header>
+        <header class="post__header">
+            <span class="post__avatar" th:style="|background-color: ${post.avatarColor}|"></span>
             <span class="post__author" th:text="${post.author}">投稿者</span>
         </header>
         <p class="post__body" th:text="${post.body}">本文</p>
@@ -23,6 +24,19 @@
               th:text="${#temporals.format(post.createdAt, 'yyyy/MM/dd HH:mm:ss')}">
             2026/05/23 09:00:00
         </time>
+        <footer class="post__actions">
+            <span class="post__like-count">
+                <span th:text="${likeSummary.count}">0</span>いいね
+            </span>
+            <form method="post" th:action="@{/posts/{id}/likes(id=${post.id})}">
+                <button type="submit"
+                        class="like-button"
+                        th:classappend="${likeSummary.liked} ? ' like-button--liked' : ''"
+                        th:text="${likeSummary.liked} ? 'いいね済み' : 'いいね'">
+                    いいね
+                </button>
+            </form>
+        </footer>
     </article>
 </main>
 </body>

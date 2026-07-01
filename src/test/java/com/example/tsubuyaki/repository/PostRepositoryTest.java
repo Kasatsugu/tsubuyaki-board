@@ -37,4 +37,22 @@ class PostRepositoryTest {
         assertThat(posts.get(49).getBody()).isEqualTo("body2");
         assertThat(posts).isSortedAccordingTo((left, right) -> right.getCreatedAt().compareTo(left.getCreatedAt()));
     }
+
+    @Test
+    @DisplayName("投稿検索_本文にキーワードを含む投稿_新着順で最大50件を返す")
+    void searchByBody_whenKeywordExists_returnsMatchedLatestFifty() {
+        LocalDateTime base = LocalDateTime.of(2026, 5, 23, 0, 0);
+        postRepository.save(new Post("alice", "検索対象ではない投稿", base.plusSeconds(100)));
+        IntStream.rangeClosed(1, 51)
+                .mapToObj(index -> new Post("user" + index, "朝会メモ " + index, base.plusSeconds(index)))
+                .forEach(postRepository::save);
+
+        List<Post> posts = postRepository.findTop50ByBodyContainingOrderByCreatedAtDesc("朝会");
+
+        assertThat(posts).hasSize(50);
+        assertThat(posts).allMatch(post -> post.getBody().contains("朝会"));
+        assertThat(posts.get(0).getBody()).isEqualTo("朝会メモ 51");
+        assertThat(posts.get(49).getBody()).isEqualTo("朝会メモ 2");
+        assertThat(posts).isSortedAccordingTo((left, right) -> right.getCreatedAt().compareTo(left.getCreatedAt()));
+    }
 }

@@ -23,12 +23,25 @@ public class PostService {
         return repository.findTop50ByOrderByCreatedAtDesc();
     }
 
+    public List<Post> search(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return latest();
+        }
+        return repository.findTop50ByBodyContainingOrderByCreatedAtDesc(keyword);
+    }
+
     public Optional<Post> findById(Long id) {
         return repository.findById(id);
     }
 
     @Transactional
     public Post create(String author, String content) {
-        return repository.save(new Post(author, content, LocalDateTime.now()));
+        return create(author, content, Post.DEFAULT_AVATAR_COLOR);
+    }
+
+    @Transactional
+    public Post create(String author, String content, String avatarColor) {
+        String color = avatarColor == null || avatarColor.isBlank() ? Post.DEFAULT_AVATAR_COLOR : avatarColor;
+        return repository.save(new Post(author, content, color, LocalDateTime.now()));
     }
 }

@@ -35,6 +35,41 @@ h1 {
     margin: 1rem 0;
 }
 
+.search-form {
+    margin: 1rem 0;
+}
+
+.search-form label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.search-form__row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.search-form input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font: inherit;
+}
+
+.search-form button {
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--color-accent);
+    border-radius: 6px;
+    background: var(--color-accent);
+    color: white;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+}
+
 .post-form {
     margin: 1rem 0;
     padding: 1rem;
@@ -57,6 +92,13 @@ h1 {
     border: 1px solid var(--color-border);
     border-radius: 6px;
     font: inherit;
+}
+
+.post-form input[type="color"] {
+    width: 3.25rem;
+    height: 2.5rem;
+    padding: 0.15rem;
+    cursor: pointer;
 }
 
 .error {
@@ -95,6 +137,21 @@ h1 {
     margin-bottom: 0;
 }
 
+.post__header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.post__avatar {
+    display: inline-block;
+    width: 1.2rem;
+    height: 1.2rem;
+    flex: 0 0 1.2rem;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 50%;
+}
+
 .post__author {
     font-weight: 600;
     margin-right: 0.5rem;
@@ -110,4 +167,43 @@ h1 {
     overflow-wrap: anywhere;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+.post__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.post__like-count {
+    color: var(--color-muted);
+    font-weight: 600;
+}
+
+.like-button {
+    min-width: 6rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--color-accent);
+    border-radius: 6px;
+    background: white;
+    color: var(--color-accent);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+}
+
+.like-button:hover,
+.like-button:focus-visible {
+    background: rgba(29, 78, 216, 0.08);
+}
+
+.like-button--liked {
+    background: var(--color-accent);
+    color: white;
+}
+
+.like-button--liked:hover,
+.like-button--liked:focus-visible {
+    background: #1e40af;
 }

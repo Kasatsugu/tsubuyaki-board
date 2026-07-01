@@ -20,6 +20,11 @@
             <p class="error" th:if="${#fields.hasErrors('author')}" th:errors="*{author}">エラー</p>
         </div>
         <div>
+            <label for="avatarColor">アバター色</label>
+            <input class="post-form__color" type="color" id="avatarColor" th:field="*{avatarColor}" value="#888888">
+            <p class="error" th:if="${#fields.hasErrors('avatarColor')}" th:errors="*{avatarColor}">エラー</p>
+        </div>
+        <div>
             <label for="content">内容 (280 文字まで)</label>
             <textarea id="content" th:field="*{content}" maxlength="280" rows="4" required></textarea>
             <p class="error" th:if="${#fields.hasErrors('content')}" th:errors="*{content}">エラー</p>

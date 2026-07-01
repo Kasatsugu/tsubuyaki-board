@@ -14,12 +14,41 @@
         <a th:href="@{/posts/new}">新規投稿</a>
     </nav>
 
+    <form class="search-form" th:action="@{/posts}" method="get">
+        <label for="post-search">キーワード検索</label>
+        <div class="search-form__row">
+            <input id="post-search" type="search" name="q" th:value="${searchQuery}" placeholder="投稿内容を検索">
+            <button type="submit">検索</button>
+        </div>
+    </form>
+
+    <form class="post-form" th:action="@{/posts/create}" th:object="${postForm}" method="post">
+        <div>
+            <label for="author">投稿者</label>
+            <input type="text" id="author" th:field="*{author}" maxlength="30" required>
+            <p class="error" th:if="${#fields.hasErrors('author')}" th:errors="*{author}">エラー</p>
+        </div>
+        <div>
+            <label for="avatarColor">アバター色</label>
+            <input class="post-form__color" type="color" id="avatarColor" th:field="*{avatarColor}" value="#888888">
+            <p class="error" th:if="${#fields.hasErrors('avatarColor')}" th:errors="*{avatarColor}">エラー</p>
+        </div>
+        <div>
+            <label for="content">内容 (280 文字まで)</label>
+            <textarea id="content" th:field="*{content}" maxlength="280" rows="4" required></textarea>
+            <p class="error" th:if="${#fields.hasErrors('content')}" th:errors="*{content}">エラー</p>
+        </div>
+        <button type="submit">投稿</button>
+    </form>
+
     <section>
         <p class="error" th:if="${errorMessage}" th:text="${errorMessage}">エラーメッセージ</p>
-        <p th:if="${#lists.isEmpty(posts)}">まだ投稿はありません</p>
+        <p th:if="${#lists.isEmpty(posts) and searchActive}">検索結果が見つかりませんでした</p>
+        <p th:if="${#lists.isEmpty(posts) and !searchActive}">まだ投稿はありません</p>
         <a class="post-card" th:each="post : ${posts}" th:href="@{/posts/{id}(id=${post.id})}">
             <article class="post">
-                <header>
+                <header class="post__header">
+                    <span class="post__avatar" th:style="|background-color: ${post.avatarColor}|"></span>
                     <span class="post__author" th:text="${post.author}">投稿者</span>
                 </header>
                 <p class="post__body" th:text="${post.body}">本文</p>

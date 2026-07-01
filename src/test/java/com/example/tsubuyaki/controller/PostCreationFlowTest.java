@@ -47,7 +47,8 @@ class PostCreationFlowTest {
 
         mockMvc.perform(post("/posts/create")
                         .param("author", "alice")
-                        .param("content", "今日の共有です"))
+                        .param("content", "今日の共有です")
+                        .param("avatarColor", "#FF5733"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/posts"));
 
@@ -55,6 +56,7 @@ class PostCreationFlowTest {
         Post savedPost = postRepository.findTop50ByOrderByCreatedAtDesc().get(0);
         assertThat(savedPost.getAuthor()).isEqualTo("alice");
         assertThat(savedPost.getBody()).isEqualTo("今日の共有です");
+        assertThat(savedPost.getAvatarColor()).isEqualTo("#FF5733");
         assertThat(savedPost.getCreatedAt()).isNotNull();
     }
 
@@ -63,9 +65,10 @@ class PostCreationFlowTest {
     void create_whenAuthorBlank_showsValidationErrorAndDoesNotSave() throws Exception {
         mockMvc.perform(post("/posts/create")
                         .param("author", "")
-                        .param("content", "本文だけあります"))
+                        .param("content", "本文だけあります")
+                        .param("avatarColor", "#888888"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("posts/form"))
+                .andExpect(view().name("posts/list"))
                 .andExpect(model().hasErrors())
                 .andExpect(model().attributeHasFieldErrors("postForm", "author"))
                 .andExpect(content().string(containsString("投稿者名を入力してください")));
@@ -78,9 +81,10 @@ class PostCreationFlowTest {
     void create_whenContentBlank_showsValidationErrorAndDoesNotSave() throws Exception {
         mockMvc.perform(post("/posts/create")
                         .param("author", "alice")
-                        .param("content", ""))
+                        .param("content", "")
+                        .param("avatarColor", "#888888"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("posts/form"))
+                .andExpect(view().name("posts/list"))
                 .andExpect(model().hasErrors())
                 .andExpect(model().attributeHasFieldErrors("postForm", "content"))
                 .andExpect(content().string(containsString("本文を入力してください")));
@@ -95,7 +99,8 @@ class PostCreationFlowTest {
 
         mockMvc.perform(post("/posts/create")
                         .param("author", "alice")
-                        .param("content", "今登録した内容"))
+                        .param("content", "今登録した内容")
+                        .param("avatarColor", "#3366CC"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/posts"));
 
@@ -109,5 +114,19 @@ class PostCreationFlowTest {
 
         assertThat(newPostIndex).isGreaterThanOrEqualTo(0);
         assertThat(oldPostIndex).isGreaterThan(newPostIndex);
+        assertThat(html).contains("background-color: #3366CC");
+    }
+
+    @Test
+    @DisplayName("投稿登録_アバター色未指定_デフォルトのグレーで保存する")
+    void create_whenAvatarColorMissing_savesDefaultGray() throws Exception {
+        mockMvc.perform(post("/posts/create")
+                        .param("author", "alice")
+                        .param("content", "色未指定の投稿"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/posts"));
+
+        Post savedPost = postRepository.findTop50ByOrderByCreatedAtDesc().get(0);
+        assertThat(savedPost.getAvatarColor()).isEqualTo("#888888");
     }
 }
