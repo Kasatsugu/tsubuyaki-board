@@ -64,18 +64,18 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("投稿一覧_登録フォーム_投稿者必須とカラーピッカーを表示する")
-    void list_rendersCreateFormWithRequiredAuthorAndColorPicker() throws Exception {
+    @DisplayName("投稿一覧_登録フォーム_表示しない")
+    void list_doesNotRenderCreateForm() throws Exception {
         given(postService.latest()).willReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/posts"))
+        MvcResult result = mockMvc.perform(get("/posts"))
                 .andExpect(status().isOk())
-                .andExpect(model().attributeExists("postForm"))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("action=\"/posts/create\"")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"author\"")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("required")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("type=\"color\"")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"#888888\"")));
+                .andReturn();
+
+        String html = result.getResponse().getContentAsString();
+        assertThat(html).doesNotContain("action=\"/posts/create\"");
+        assertThat(html).doesNotContain("id=\"author\"");
+        assertThat(html).doesNotContain("id=\"content\"");
     }
 
     @Test

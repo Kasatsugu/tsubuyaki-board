@@ -38,9 +38,6 @@ public class PostController {
 
     @GetMapping({ "/", "/posts", "/posts/" })
     public String list(@RequestParam(name = "q", required = false) String query, Model model) {
-        if (!model.containsAttribute("postForm")) {
-            model.addAttribute("postForm", new PostForm());
-        }
         addListAttributes(query, model);
         return "posts/list";
     }
@@ -66,8 +63,7 @@ public class PostController {
     public String create(@Valid @ModelAttribute("postForm") PostForm postForm,
             BindingResult bindingResult, Model model) {
         if (bindingResult.hasErrors()) {
-            addListAttributes(null, model);
-            return "posts/list";
+            return "posts/form";
         }
 
         postService.create(postForm.getAuthor(), postForm.getContent(), postForm.getAvatarColor());

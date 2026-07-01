@@ -68,7 +68,7 @@ class PostCreationFlowTest {
                         .param("content", "本文だけあります")
                         .param("avatarColor", "#888888"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("posts/list"))
+                .andExpect(view().name("posts/form"))
                 .andExpect(model().hasErrors())
                 .andExpect(model().attributeHasFieldErrors("postForm", "author"))
                 .andExpect(content().string(containsString("投稿者名を入力してください")));
@@ -84,7 +84,7 @@ class PostCreationFlowTest {
                         .param("content", "")
                         .param("avatarColor", "#888888"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("posts/list"))
+                .andExpect(view().name("posts/form"))
                 .andExpect(model().hasErrors())
                 .andExpect(model().attributeHasFieldErrors("postForm", "content"))
                 .andExpect(content().string(containsString("本文を入力してください")));
