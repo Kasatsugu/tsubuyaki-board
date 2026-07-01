@@ -2,9 +2,13 @@ package com.example.tsubuyaki.controller;
 
 import com.example.tsubuyaki.service.PostService;
 import com.example.tsubuyaki.web.dto.PostForm;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 
 @Controller
 public class PostController {
@@ -18,6 +22,9 @@ public class PostController {
     @GetMapping({ "/", "/posts", "/posts/" })
     public String list(Model model) {
         model.addAttribute("posts", postService.latest());
+        if (!model.containsAttribute("postForm")) {
+            model.addAttribute("postForm", new PostForm());
+        }
         return "posts/list";
     }
 
@@ -27,7 +34,18 @@ public class PostController {
         return "posts/form";
     }
 
+    @PostMapping("/posts/create")
+    public String create(@Valid @ModelAttribute("postForm") PostForm postForm,
+            BindingResult bindingResult, Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("posts", postService.latest());
+            return "posts/list";
+        }
+
+        postService.create(postForm.getAuthor(), postForm.getContent());
+        return "redirect:/posts/";
+    }
+
     // 演習中に追加するエンドポイント:
-    //   @PostMapping("/posts")           // 投稿登録
     //   @GetMapping("/posts/{id}")       // 詳細
 }

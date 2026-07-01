@@ -11,7 +11,7 @@ public class PostForm {
 
     @NotBlank(message = "本文を入力してください")
     @Size(max = 280, message = "本文は 280 文字以内で入力してください")
-    private String body;
+    private String content;
 
     public PostForm() {
     }
@@ -24,11 +24,11 @@ public class PostForm {
         this.author = author;
     }
 
-    public String getBody() {
-        return body;
+    public String getContent() {
+        return content;
     }
 
-    public void setBody(String body) {
-        this.body = body;
+    public void setContent(String content) {
+        this.content = content;
     }
 }
