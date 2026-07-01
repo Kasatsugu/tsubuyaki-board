@@ -93,6 +93,23 @@ class PostControllerTest {
     }
 
     @Test
+    @DisplayName("投稿一覧_投稿カード_カード全体が詳細リンクになる")
+    void list_postCard_rendersWholeCardAsDetailLink() throws Exception {
+        Post post = new Post("alice", "カード全体で開きたい投稿", LocalDateTime.of(2026, 5, 23, 10, 15));
+        ReflectionTestUtils.setField(post, "id", 42L);
+        given(postService.latest()).willReturn(List.of(post));
+
+        MvcResult result = mockMvc.perform(get("/posts"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String html = result.getResponse().getContentAsString();
+        assertThat(html).contains("<a class=\"post-card\" href=\"/posts/42\">");
+        assertThat(html.indexOf("<a class=\"post-card\" href=\"/posts/42\">"))
+                .isLessThan(html.indexOf("<article class=\"post\">"));
+    }
+
+    @Test
     @DisplayName("投稿詳細_存在するID_投稿詳細を表示する")
     void detail_existingId_rendersPostDetail() throws Exception {
         Post post = new Post("alice", "全文を表示します", LocalDateTime.of(2026, 5, 23, 10, 15, 30));

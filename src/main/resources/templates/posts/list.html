@@ -17,17 +17,17 @@
     <section>
         <p class="error" th:if="${errorMessage}" th:text="${errorMessage}">エラーメッセージ</p>
         <p th:if="${#lists.isEmpty(posts)}">まだ投稿はありません</p>
-        <article class="post" th:each="post : ${posts}">
-            <header>
-                <span class="post__author" th:text="${post.author}">投稿者</span>
-            </header>
-            <p class="post__body">
-                <a th:href="@{/posts/{id}(id=${post.id})}" th:text="${post.body}">本文</a>
-            </p>
-            <time class="post__created-at"
-                  th:datetime="${post.createdAt}"
-                  th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">2026-05-23 09:00</time>
-        </article>
+        <a class="post-card" th:each="post : ${posts}" th:href="@{/posts/{id}(id=${post.id})}">
+            <article class="post">
+                <header>
+                    <span class="post__author" th:text="${post.author}">投稿者</span>
+                </header>
+                <p class="post__body" th:text="${post.body}">本文</p>
+                <time class="post__created-at"
+                      th:datetime="${post.createdAt}"
+                      th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">2026-05-23 09:00</time>
+            </article>
+        </a>
     </section>
 </main>
 </body>
