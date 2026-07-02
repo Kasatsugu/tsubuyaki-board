@@ -207,3 +207,20 @@ h1 {
 .like-button--liked:focus-visible {
     background: #1e40af;
 }
+
+.delete-button {
+    min-width: 4rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #b91c1c;
+    border-radius: 6px;
+    background: white;
+    color: #b91c1c;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+}
+
+.delete-button:hover,
+.delete-button:focus-visible {
+    background: rgba(185, 28, 28, 0.08);
+}

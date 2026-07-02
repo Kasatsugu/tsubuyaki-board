@@ -1,6 +1,7 @@
 package com.example.tsubuyaki.sample;
 
 import com.example.tsubuyaki.repository.PostRepository;
+import com.example.tsubuyaki.repository.TagRepository;
 import com.example.tsubuyaki.service.PostService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,13 +26,17 @@ class SamplePostServiceTest {
     @Mock
     private PostRepository postRepository;
 
+    @Mock
+    private TagRepository tagRepository;
+
     @InjectMocks
     private PostService postService;
 
     @Test
     @DisplayName("Service_latest_投稿がないとき_空リストを返す")
     void latest_returnsEmpty_whenRepositoryReturnsEmpty() {
-        given(postRepository.findTop50ByOrderByCreatedAtDesc()).willReturn(Collections.emptyList());
+        given(postRepository.findTop50ByDeletedAtIsNullAndParentIsNullOrderByCreatedAtDesc())
+                .willReturn(Collections.emptyList());
 
         assertThat(postService.latest()).isEmpty();
     }

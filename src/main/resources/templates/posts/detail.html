@@ -36,8 +36,57 @@
                     いいね
                 </button>
             </form>
+            <form method="post" th:action="@{/posts/{id}/delete(id=${post.id})}">
+                <button type="submit" class="delete-button">削除</button>
+            </form>
         </footer>
     </article>
+
+    <section class="reply-compose">
+        <h2>リプライする</h2>
+        <form class="post-form" th:action="@{/posts/{id}/reply(id=${post.id})}"
+              th:object="${replyForm}" method="post">
+            <input type="hidden" th:if="${_csrf != null}"
+                   th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+            <label for="reply-author">投稿者</label>
+            <input id="reply-author" type="text" th:field="*{author}" maxlength="30" required>
+            <p class="error" th:if="${#fields.hasErrors('author')}" th:errors="*{author}">
+                投稿者名エラー
+            </p>
+
+            <label for="reply-content">本文</label>
+            <textarea id="reply-content" th:field="*{content}" rows="4" maxlength="280" required></textarea>
+            <p class="error" th:if="${#fields.hasErrors('content')}" th:errors="*{content}">
+                本文エラー
+            </p>
+
+            <label for="reply-avatar-color">アバター色</label>
+            <input id="reply-avatar-color" type="color" th:field="*{avatarColor}" required>
+            <p class="error" th:if="${#fields.hasErrors('avatarColor')}" th:errors="*{avatarColor}">
+                アバター色エラー
+            </p>
+
+            <button type="submit">リプライ</button>
+        </form>
+    </section>
+
+    <section class="reply-list">
+        <h2>リプライ一覧</h2>
+        <p th:if="${#lists.isEmpty(replies)}">まだリプライはありません</p>
+        <article class="post reply" th:each="reply : ${replies}">
+            <header class="post__header">
+                <span class="post__avatar" th:style="|background-color: ${reply.avatarColor}|"></span>
+                <span class="post__author" th:text="${reply.author}">投稿者</span>
+            </header>
+            <p class="post__body" th:text="${reply.body}">返信本文</p>
+            <time class="post__created-at"
+                  th:datetime="${reply.createdAt}"
+                  th:text="${#temporals.format(reply.createdAt, 'yyyy/MM/dd HH:mm:ss')}">
+                2026/05/23 09:01:00
+            </time>
+        </article>
+    </section>
 </main>
 </body>
 </html>

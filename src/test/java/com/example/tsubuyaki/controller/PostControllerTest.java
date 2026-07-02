@@ -161,6 +161,36 @@ class PostControllerTest {
     }
 
     @Test
+    @DisplayName("タグ別一覧_指定タグあり_該当タグの投稿をモデルに格納して表示する")
+    void tagList_whenTagExists_rendersTaggedPosts() throws Exception {
+        Post springPost = new Post("alice", "Springの投稿 #Spring", LocalDateTime.of(2026, 5, 23, 10, 15));
+        given(postService.findByTag("Spring")).willReturn(List.of(springPost));
+
+        mockMvc.perform(get("/tags/Spring"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("posts/tag_list"))
+                .andExpect(model().attribute("tagName", "Spring"))
+                .andExpect(model().attribute("posts", List.of(springPost)))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("#Spring の投稿")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Springの投稿 #Spring")));
+
+        verify(postService).findByTag("Spring");
+    }
+
+    @Test
+    @DisplayName("タグ別一覧_存在しないタグ_0件メッセージを表示する")
+    void tagList_whenTagDoesNotExist_showsEmptyMessage() throws Exception {
+        given(postService.findByTag("Unknown")).willReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/tags/Unknown"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("posts/tag_list"))
+                .andExpect(model().attribute("tagName", "Unknown"))
+                .andExpect(model().attribute("posts", Collections.emptyList()))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("まだ投稿はありません")));
+    }
+
+    @Test
     @DisplayName("投稿一覧_投稿内容リンク_詳細画面へのリンクを表示する")
     void list_postBodyLink_rendersDetailLink() throws Exception {
         Post post = new Post("alice", "詳細で読みたい投稿", LocalDateTime.of(2026, 5, 23, 10, 15));
@@ -199,6 +229,7 @@ class PostControllerTest {
         given(clientHashGenerator.generate("203.0.113.10", "Agent A")).willReturn("hash0001");
         given(clientIpResolver.resolve(org.mockito.ArgumentMatchers.any())).willReturn("203.0.113.10");
         given(likeService.summary(42L, "hash0001")).willReturn(new LikeSummary(7L, true));
+        given(postService.repliesFor(42L)).willReturn(Collections.emptyList());
 
         mockMvc.perform(get("/posts/42")
                         .with(request -> {
@@ -209,6 +240,8 @@ class PostControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("posts/detail"))
                 .andExpect(model().attribute("post", post))
+                .andExpect(model().attribute("replies", Collections.emptyList()))
+                .andExpect(model().attributeExists("replyForm"))
                 .andExpect(model().attribute("likeSummary", new LikeSummary(7L, true)))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("alice")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("全文を表示します")))
@@ -216,7 +249,97 @@ class PostControllerTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("2026/05/23 10:15:30")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("いいね済み")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("7")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("action=\"/posts/42/delete\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("削除")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("action=\"/posts/42/reply\"")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"/posts\"")));
+    }
+
+    @Test
+    @DisplayName("投稿詳細_返信あり_紐づく返信だけをモデルに積んで表示する")
+    void detail_whenRepliesExist_rendersReplies() throws Exception {
+        Post post = new Post("alice", "親投稿", LocalDateTime.of(2026, 5, 23, 10, 15, 30));
+        ReflectionTestUtils.setField(post, "id", 42L);
+        Post newerReply = new Post("bob", "新しい返信", LocalDateTime.of(2026, 5, 23, 10, 20));
+        ReflectionTestUtils.setField(newerReply, "id", 101L);
+        Post olderReply = new Post("carol", "古い返信", LocalDateTime.of(2026, 5, 23, 10, 16));
+        ReflectionTestUtils.setField(olderReply, "id", 100L);
+        List<Post> replies = List.of(newerReply, olderReply);
+        given(postService.findById(42L)).willReturn(Optional.of(post));
+        given(postService.repliesFor(42L)).willReturn(replies);
+        given(clientHashGenerator.generate("203.0.113.10", "Agent A")).willReturn("hash0001");
+        given(clientIpResolver.resolve(org.mockito.ArgumentMatchers.any())).willReturn("203.0.113.10");
+        given(likeService.summary(42L, "hash0001")).willReturn(new LikeSummary(0L, false));
+
+        MvcResult result = mockMvc.perform(get("/posts/42")
+                        .with(request -> {
+                            request.setRemoteAddr("203.0.113.10");
+                            return request;
+                        })
+                        .header("User-Agent", "Agent A"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("posts/detail"))
+                .andExpect(model().attribute("replies", replies))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("リプライ一覧")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("新しい返信")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("古い返信")))
+                .andReturn();
+
+        String html = result.getResponse().getContentAsString();
+        assertThat(html.indexOf("新しい返信")).isLessThan(html.indexOf("古い返信"));
+        verify(postService).repliesFor(42L);
+    }
+
+    @Test
+    @DisplayName("返信作成_POST_返信を保存して詳細画面へリダイレクトする")
+    void createReply_whenValid_savesReplyAndRedirectsToDetail() throws Exception {
+        Post parent = new Post("alice", "親投稿", LocalDateTime.of(2026, 5, 23, 10, 15, 30));
+        ReflectionTestUtils.setField(parent, "id", 42L);
+        given(postService.findById(42L)).willReturn(Optional.of(parent));
+        given(postService.createReply(42L, "bob", "返信本文 #ReplyTag", "#3366CC"))
+                .willReturn(Optional.of(new Post("bob", "返信本文 #ReplyTag", LocalDateTime.now())));
+
+        mockMvc.perform(post("/posts/42/reply")
+                        .param("author", "bob")
+                        .param("content", "返信本文 #ReplyTag")
+                        .param("avatarColor", "#3366CC"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/posts/42"));
+
+        verify(postService).createReply(42L, "bob", "返信本文 #ReplyTag", "#3366CC");
+    }
+
+    @Test
+    @DisplayName("返信作成_本文未入力_詳細画面をエラー付きで再表示する")
+    void createReply_whenContentBlank_rerendersDetailWithErrors() throws Exception {
+        Post post = new Post("alice", "親投稿", LocalDateTime.of(2026, 5, 23, 10, 15, 30));
+        ReflectionTestUtils.setField(post, "id", 42L);
+        given(postService.findById(42L)).willReturn(Optional.of(post));
+        given(postService.repliesFor(42L)).willReturn(Collections.emptyList());
+        given(clientHashGenerator.generate("203.0.113.10", "Agent A")).willReturn("hash0001");
+        given(clientIpResolver.resolve(org.mockito.ArgumentMatchers.any())).willReturn("203.0.113.10");
+        given(likeService.summary(42L, "hash0001")).willReturn(new LikeSummary(0L, false));
+
+        mockMvc.perform(post("/posts/42/reply")
+                        .with(request -> {
+                            request.setRemoteAddr("203.0.113.10");
+                            return request;
+                        })
+                        .header("User-Agent", "Agent A")
+                        .param("author", "bob")
+                        .param("content", "")
+                        .param("avatarColor", "#3366CC"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("posts/detail"))
+                .andExpect(model().hasErrors())
+                .andExpect(model().attributeHasFieldErrors("replyForm", "content"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("本文を入力してください")));
+
+        verify(postService, never()).createReply(
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -249,6 +372,16 @@ class PostControllerTest {
                 .andExpect(redirectedUrl("/posts/42"));
 
         verify(likeService).toggle(42L, "hash0001");
+    }
+
+    @Test
+    @DisplayName("投稿削除_POST_削除して一覧へリダイレクトする")
+    void delete_postsToServiceAndRedirectsToList() throws Exception {
+        mockMvc.perform(post("/posts/42/delete"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/posts"));
+
+        verify(postService).delete(42L);
     }
 
     @Test

@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -53,7 +54,7 @@ class PostCreationFlowTest {
                 .andExpect(redirectedUrl("/posts"));
 
         assertThat(postRepository.count()).isEqualTo(beforeCount + 1);
-        Post savedPost = postRepository.findTop50ByOrderByCreatedAtDesc().get(0);
+        Post savedPost = postRepository.findTop50ByDeletedAtIsNullAndParentIsNullOrderByCreatedAtDesc().get(0);
         assertThat(savedPost.getAuthor()).isEqualTo("alice");
         assertThat(savedPost.getBody()).isEqualTo("今日の共有です");
         assertThat(savedPost.getAvatarColor()).isEqualTo("#FF5733");
@@ -118,6 +119,39 @@ class PostCreationFlowTest {
     }
 
     @Test
+    @DisplayName("投稿一覧_論理削除済みの投稿_モデルにも画面にも表示しない")
+    void list_whenDeletedPostExists_excludesDeletedPostFromModelAndHtml() throws Exception {
+        Post visiblePost = postRepository.save(
+                new Post("alice", "表示される投稿", LocalDateTime.of(2026, 5, 23, 10, 0)));
+        Post deletedPost = new Post("bob", "表示されない投稿", LocalDateTime.of(2026, 5, 23, 11, 0));
+        deletedPost.markDeleted(LocalDateTime.of(2026, 5, 23, 12, 0));
+        postRepository.save(deletedPost);
+
+        MvcResult result = mockMvc.perform(get("/posts"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("posts", List.of(visiblePost)))
+                .andReturn();
+
+        String html = result.getResponse().getContentAsString();
+        assertThat(html).contains("表示される投稿");
+        assertThat(html).doesNotContain("表示されない投稿");
+    }
+
+    @Test
+    @DisplayName("投稿削除_POST_deletedAtを保存して一覧へリダイレクトする")
+    void delete_whenPostExists_setsDeletedAtAndRedirectsToList() throws Exception {
+        Post post = postRepository.save(
+                new Post("alice", "削除する投稿", LocalDateTime.of(2026, 5, 23, 10, 0)));
+
+        mockMvc.perform(post("/posts/" + post.getId() + "/delete"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/posts"));
+
+        Post deletedPost = postRepository.findById(post.getId()).orElseThrow();
+        assertThat(deletedPost.getDeletedAt()).isNotNull();
+    }
+
+    @Test
     @DisplayName("投稿登録_アバター色未指定_デフォルトのグレーで保存する")
     void create_whenAvatarColorMissing_savesDefaultGray() throws Exception {
         mockMvc.perform(post("/posts/create")
@@ -126,7 +160,29 @@ class PostCreationFlowTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/posts"));
 
-        Post savedPost = postRepository.findTop50ByOrderByCreatedAtDesc().get(0);
+        Post savedPost = postRepository.findTop50ByDeletedAtIsNullAndParentIsNullOrderByCreatedAtDesc().get(0);
         assertThat(savedPost.getAvatarColor()).isEqualTo("#888888");
+    }
+
+    @Test
+    @DisplayName("投稿一覧_返信投稿あり_通常投稿だけをモデルと画面に表示する")
+    void list_whenRepliesExist_excludesRepliesFromModelAndHtml() throws Exception {
+        Post parent = postRepository.save(
+                new Post("alice", "通常投稿", LocalDateTime.of(2026, 5, 23, 10, 0)));
+        Post reply = new Post("bob", "一覧に出さない返信", LocalDateTime.of(2026, 5, 23, 11, 0));
+        reply.setParent(parent);
+        postRepository.save(reply);
+
+        MvcResult result = mockMvc.perform(get("/posts"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        @SuppressWarnings("unchecked")
+        List<Post> posts = (List<Post>) result.getModelAndView().getModel().get("posts");
+        String html = result.getResponse().getContentAsString();
+
+        assertThat(posts).extracting(Post::getBody).containsExactly("通常投稿");
+        assertThat(html).contains("通常投稿");
+        assertThat(html).doesNotContain("一覧に出さない返信");
     }
 }

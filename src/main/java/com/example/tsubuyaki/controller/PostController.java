@@ -42,6 +42,13 @@ public class PostController {
         return "posts/list";
     }
 
+    @GetMapping("/tags/{name}")
+    public String tagList(@PathVariable String name, Model model) {
+        model.addAttribute("tagName", name);
+        model.addAttribute("posts", postService.findByTag(name));
+        return "posts/tag_list";
+    }
+
     private void addListAttributes(String query, Model model) {
         boolean searchActive = hasSearchQuery(query);
         model.addAttribute("posts", searchActive ? postService.search(query) : postService.latest());
@@ -74,14 +81,45 @@ public class PostController {
     public String detail(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes,
             HttpServletRequest request) {
         Optional<Post> post = postService.findById(id);
-        if (post.isEmpty()) {
+        if (post.isEmpty() || post.get().getDeletedAt() != null) {
             redirectAttributes.addFlashAttribute("errorMessage", "指定された投稿は見つかりませんでした");
             return "redirect:/posts";
         }
 
-        String clientHash = clientHashGenerator.generate(clientIpResolver.resolve(request), request.getHeader("User-Agent"));
-        model.addAttribute("post", post.get());
-        model.addAttribute("likeSummary", likeService.summary(id, clientHash));
+        return renderDetail(post.get(), model, request);
+    }
+
+    @PostMapping("/posts/{id}/reply")
+    public String createReply(@PathVariable Long id, @Valid @ModelAttribute("replyForm") PostForm replyForm,
+            BindingResult bindingResult, Model model, RedirectAttributes redirectAttributes,
+            HttpServletRequest request) {
+        Optional<Post> parent = postService.findById(id);
+        if (parent.isEmpty() || parent.get().getDeletedAt() != null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "指定された投稿は見つかりませんでした");
+            return "redirect:/posts";
+        }
+        if (bindingResult.hasErrors()) {
+            return renderDetail(parent.get(), model, request);
+        }
+
+        Optional<Post> created = postService.createReply(
+                id, replyForm.getAuthor(), replyForm.getContent(), replyForm.getAvatarColor());
+        if (created.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "削除された投稿にはリプライできません");
+            return "redirect:/posts";
+        }
+        return "redirect:/posts/" + id;
+    }
+
+    private String renderDetail(Post post, Model model, HttpServletRequest request) {
+        String clientHash = clientHashGenerator.generate(
+                clientIpResolver.resolve(request), request.getHeader("User-Agent"));
+        model.addAttribute("post", post);
+        model.addAttribute("replies", postService.repliesFor(post.getId()));
+        if (!model.containsAttribute("replyForm")) {
+            model.addAttribute("replyForm", new PostForm());
+        }
+        model.addAttribute("likeSummary", likeService.summary(post.getId(), clientHash));
         return "posts/detail";
     }
 
@@ -90,5 +128,11 @@ public class PostController {
         String clientHash = clientHashGenerator.generate(clientIpResolver.resolve(request), request.getHeader("User-Agent"));
         likeService.toggle(id, clientHash);
         return "redirect:/posts/" + id;
+    }
+
+    @PostMapping("/posts/{id}/delete")
+    public String delete(@PathVariable Long id) {
+        postService.delete(id);
+        return "redirect:/posts";
     }
 }

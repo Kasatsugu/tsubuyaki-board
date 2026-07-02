@@ -7,7 +7,11 @@ import java.util.List;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    List<Post> findTop50ByOrderByCreatedAtDesc();
+    List<Post> findTop50ByDeletedAtIsNullAndParentIsNullOrderByCreatedAtDesc();
 
-    List<Post> findTop50ByBodyContainingOrderByCreatedAtDesc(String keyword);
+    List<Post> findTop50ByDeletedAtIsNullAndParentIsNullAndBodyContainingOrderByCreatedAtDesc(String keyword);
+
+    List<Post> findDistinctTop50ByDeletedAtIsNullAndTagsNameOrderByCreatedAtDesc(String tagName);
+
+    List<Post> findByParentIdAndDeletedAtIsNullAndParentDeletedAtIsNullOrderByCreatedAtDesc(Long parentId);
 }
